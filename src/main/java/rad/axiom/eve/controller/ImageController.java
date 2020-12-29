@@ -7,10 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import rad.axiom.eve.helper.JSONHelper;
 import rad.axiom.eve.mtg.Card;
 
@@ -98,28 +96,24 @@ public class ImageController {
         return true;
     }
 
-    @RequestMapping(value = "/identify/set/{setCode}", method = RequestMethod.GET)
+    @RequestMapping(value ="/identify/set/{setCode}", method = RequestMethod.POST)
     public @ResponseBody
-    Card identifyGivenSet(@PathVariable("setCode") String setCode) {
+    Card identifyImageFromImage(@PathVariable("setCode") String setCode,  @RequestParam(value = "image", required = true) MultipartFile image) {
+        logger.info("identifyFromImage");
         List<Card> cards = cardController.getCardsBySet(setCode);
-        if (cards.size() == 0) {
-            logger.warn("Did not find any cards for set {}.  Therefore we could not match the image.", setCode);
-            return null;
+        long now = System.currentTimeMillis();
+        try {
+            byte[] byteArr = image.getBytes();
+            saveImageToFile("src/main/resources/downloads/identify/",
+                    now + "",
+                    byteArr);
+            InputStream inputStream = new ByteArrayInputStream(byteArr);
+        }catch(Exception e)
+        {
+            logger.error("error {}" , e);
         }
-        List<String> ids = cards.stream().map(c -> c.getId()).collect(Collectors.toList());
-        BufferedImage img = null;
-        ArrayList<BufferedImage> setImages = new ArrayList<>();
-        logger.info("Starting to load images");
-        for (String id : ids) {
-            try {
-                img = ImageIO.read(new File(allDownloadLocation + "/" + id + ".jpg"));
-                setImages.add(img);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        logger.info("We have loaded {} images from set {}", setImages.size(), setCode);
-        return null;
+        int index = getRandomNumber(0, cards.size() - 1);
+        return cards.get(index);
     }
 
     private byte[] getImageFromURL(String s) throws IOException {
@@ -214,6 +208,36 @@ public class ImageController {
         } catch (Exception e) {
 
         }
+    }
+
+    /**
+     * @param folder
+     * @param file
+     * @param image
+     * @throws IOException
+     */
+    private
+    void saveImageToFile(String folder, String file, byte[] image) throws IOException {
+        logger.info("Folder: " + folder);
+        logger.info("\tfile: " + file);
+        String PATH = "";
+        String directoryName = PATH.concat(folder);
+        String fileName = file + ".jpg";
+
+        File directory = new File(directoryName);
+        if (!directory.exists()) {
+            directory.mkdirs();
+            // If you require it to make the entire directory path including parents,
+            // use directory.mkdirs(); here instead.
+        }
+        FileOutputStream fos = new FileOutputStream(folder + "/" + fileName);
+        logger.info(folder + "/" + fileName);
+        fos.write(image);
+        fos.close();
+    }
+
+    public int getRandomNumber(int min, int max) {
+        return (int) ((Math.random() * (max - min)) + min);
     }
 
 }
