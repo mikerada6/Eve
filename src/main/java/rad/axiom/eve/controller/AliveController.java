@@ -24,7 +24,7 @@ public class AliveController {
     @RequestMapping(value = "/alive", method = RequestMethod.GET)
     public @ResponseBody
     Boolean alive() {
-        logger.info("alive");
+        logger.info("Eve is alive. Are you there Wall-E?");
         return _alive;
     }
 
