@@ -214,6 +214,38 @@ public class ScryfallHelper {
             }
         }
     }
+    public void setImage_uris(Card card, HashMap<String, Object> map, String id) {
+        if (map.containsKey(id)) {
+            HashMap<String, String> hashMap = (HashMap<String, String>) map.get(id);
+            if (hashMap != null) {
+                if(hashMap.containsKey("small"))
+                {
+                    card.setSmallUri(hashMap.get("small"));
+                }
+                if(hashMap.containsKey("normal"))
+                {
+                    card.setNormalUri(hashMap.get("normal"));
+                }
+                if(hashMap.containsKey("large"))
+                {
+                    card.setLargeUri(hashMap.get("large"));
+                }
+                if(hashMap.containsKey("art_crop"))
+                {
+                    card.setArtCropUri(hashMap.get("art_crop"));
+                }
+                if(hashMap.containsKey("border_crop"))
+                {
+                    card.setBorderCropUri(hashMap.get("border_crop"));
+                }
+                if(hashMap.containsKey("png"))
+                {
+                    card.setPngUri(hashMap.get("png"));
+                }
+            }
+        }
+    }
+
 
     public void setTypeLine(Card card, HashMap<String, Object> map, String id) {
         if (map.containsKey(id)) {
@@ -293,7 +325,7 @@ public class ScryfallHelper {
             String temp = map.get(id).toString();
             try {
                 card.setVariationOf(temp);
-                card = cardController.getCard(temp);
+                card = cardController.getCardById(temp);
             } catch (Exception e) {
                 return;
             }

@@ -48,5 +48,11 @@ public class Card {
     private boolean reserved;
     private String variationOf;
     private boolean booster;
+    private String pngUri;
+    private String borderCropUri;
+    private String artCropUri;
+    private String largeUri;
+    private String normalUri;
+    private String smallUri;
 
 }

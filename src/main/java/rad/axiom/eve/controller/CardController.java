@@ -29,9 +29,18 @@ class CardController {
     @Autowired
     private CardRepository cardRepository;
 
+    @GetMapping(path = "/")
+    public @ResponseBody
+    List<Card> getAllCards() {
+        logger.info("Getting all the cards.");
+        List<Card> cards = cardRepository.findAll();
+        logger.info("Found {} cards.", cards.size());
+        return cards;
+    }
+
     @GetMapping(path = "/{cardId}")
     public @ResponseBody
-    Card getCard(@PathVariable("cardId") String cardId) {
+    Card getCardById(@PathVariable("cardId") String cardId) {
         logger.info("Getting card with Id: {}.", cardId);
         return cardRepository
                 .findById(cardId)
@@ -40,8 +49,8 @@ class CardController {
 
     @GetMapping(path = "set/{setCode}")
     public @ResponseBody
-    List<Card> getCardBySet(@PathVariable("setCode") String setCode) {
-        logger.info("Geting all the cards from set {}.", setCode);
+    List<Card> getCardsBySet(@PathVariable("setCode") String setCode) {
+        logger.info("Getting all the cards from set {}.", setCode);
         List<Card> cards = cardRepository.findAllBySetCode(setCode);
         logger.info("Found {} cards in set {}.", cards.size(), setCode);
         return cards;
@@ -49,13 +58,13 @@ class CardController {
 
 
     /**
-     * Endpoint to check if the application is "alive". For use by load-balancer？
+     * Endpoint to setup the database of all magic cards？
      *
      * @return true if alive
      */
     @RequestMapping(value = "/setup", method = RequestMethod.GET)
     public @ResponseBody
-    Boolean setup() {
+    List<Card> setup() {
         ArrayList<Card> cards = new ArrayList<>();
         logger.info("Starting the setup");
         String fileLocation = downloadTodaysData();
@@ -63,12 +72,12 @@ class CardController {
 
         if (fileLocation.equals("")) {
             logger.error("unable to get the download");
-            return false;
+            return cards;
         }
         jsonParser = openJSON(fileLocation);
         if (jsonParser == null) {
             logger.error("unable open the JSON");
-            return false;
+            return cards;
         }
         int count = 0;
         while (!jsonParser.isClosed()) {
@@ -78,7 +87,7 @@ class CardController {
                 jsonToken = jsonParser.nextToken();
             } catch (IOException e) {
                 logger.error("Unable to parse token with error {}.", e);
-                return false;
+                return cards;
             }
             if (JsonToken.START_OBJECT.equals(jsonToken)) {
                 HashMap<String, Object> map = getObject(jsonParser);
@@ -99,6 +108,7 @@ class CardController {
                 scryfallHelper.setSetBooster(card, map, "booster");
                 scryfallHelper.setSetType(card, map, "set_type");
                 scryfallHelper.setTypeLine(card, map, "type_line");
+                scryfallHelper.setImage_uris(card,map,"image_uris");
                 boolean variation = scryfallHelper.setVariation(card, map, "variation");
                 if (variation) {
                     scryfallHelper.setVariationOf(card, map, "variation_of");
@@ -121,7 +131,7 @@ class CardController {
             cardRepository.saveAll(cards);
             cards.clear();
         }
-        return true;
+        return cardRepository.findAll();
     }
 
     private String downloadTodaysData() {
