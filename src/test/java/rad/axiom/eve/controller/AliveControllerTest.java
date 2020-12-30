@@ -17,7 +17,7 @@ class AliveControllerTest {
 
     @Test
     void alive() {
-        Boolean isAlive = aliveController.alive();
-        assertEquals(true, isAlive);
+        String isAlive = aliveController.alive();
+        assertEquals("directive?", isAlive);
     }
 }

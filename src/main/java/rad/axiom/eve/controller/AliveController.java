@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequestMapping("/eve")
 public class AliveController {
 
-    private static boolean _alive = true;
     private static final Logger logger = LoggerFactory.getLogger(AliveController.class);
+    private static final boolean _alive = true;
 
     /**
      * Endpoint to check if the application is "alive". For use by load-balancer？
@@ -23,9 +23,9 @@ public class AliveController {
      */
     @RequestMapping(value = "/alive", method = RequestMethod.GET)
     public @ResponseBody
-    Boolean alive() {
+    String alive() {
         logger.info("Eve is alive. Are you there Wall-E?");
-        return _alive;
+        return "directive?";
     }
 
 }
