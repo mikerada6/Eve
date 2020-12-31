@@ -9,16 +9,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import rad.axiom.eve.exception.ForbiddenException;
+import rad.axiom.eve.exception.ResourceNotFoundException;
 import rad.axiom.eve.helper.JSONHelper;
 import rad.axiom.eve.mtg.Card;
+import rad.axiom.eve.session.Session;
+import rad.axiom.eve.session.SessionStatus;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Controller
 @RequestMapping(path = "/image")
@@ -30,6 +32,10 @@ public class ImageController {
     private CardController cardController;
     @Autowired
     private JSONHelper jsonHelper;
+    @Autowired
+    private SessionController sessionController;
+    @Autowired
+    private WalleController walleController;
 
     /**
      * Endpoint to setup the database of all magic card images？
@@ -96,23 +102,44 @@ public class ImageController {
         return true;
     }
 
-    @RequestMapping(value ="/identify/set/{setCode}", method = RequestMethod.POST)
+    @RequestMapping(value = "/identify/set/{setCode}", method = RequestMethod.POST)
     public @ResponseBody
-    Card identifyImageFromImage(@PathVariable("setCode") String setCode,  @RequestParam(value = "image", required = true) MultipartFile image) {
+    Card identifyImageFromImage(@PathVariable("setCode") String setCode, @RequestParam(value = "sessionId", required = true) String sessionId, @RequestParam(value = "image", required = true) MultipartFile image) {
         logger.info("identifyFromImage");
+        Session session = null;
+        try {
+            session = sessionController.findSessionById(sessionId);
+        } catch (ResourceNotFoundException ex) {
+            throw new ResourceNotFoundException("Could not find a session with id: " + sessionId + ".");
+        }
+
+        if (session.getStatus() == SessionStatus.CLOSED) {
+            throw new ForbiddenException("Session " + sessionId + " is closed and you can not add new scans to it.");
+        }
+        if(session.getStatus() == SessionStatus.PAUSED)
+        {
+            session.setStatus(SessionStatus.NORMAL);
+        }
+
+
         List<Card> cards = cardController.getCardsBySet(setCode);
-        long now = System.currentTimeMillis();
+        UUID pictureID = UUID.randomUUID();
         try {
             byte[] byteArr = image.getBytes();
             saveImageToFile("src/main/resources/downloads/identify/",
-                    now + "",
+                    pictureID.toString(),
                     byteArr);
             InputStream inputStream = new ByteArrayInputStream(byteArr);
-        }catch(Exception e)
-        {
-            logger.error("error {}" , e);
+        } catch (Exception e) {
+            logger.error("error {}", e);
         }
+
+
         int index = getRandomNumber(0, cards.size() - 1);
+
+        session.setLastUpdated(System.currentTimeMillis());
+        sessionController.saveSession(session);
+
         return cards.get(index);
     }
 
@@ -216,8 +243,7 @@ public class ImageController {
      * @param image
      * @throws IOException
      */
-    private
-    void saveImageToFile(String folder, String file, byte[] image) throws IOException {
+    private void saveImageToFile(String folder, String file, byte[] image) throws IOException {
         logger.info("Folder: " + folder);
         logger.info("\tfile: " + file);
         String PATH = "";

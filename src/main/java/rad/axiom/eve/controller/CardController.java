@@ -44,7 +44,7 @@ class CardController {
         logger.info("Getting card with Id: {}.", cardId);
         return cardRepository
                 .findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("could not find card with id: " + cardId));
+                .orElseThrow(() -> new ResourceNotFoundException("Could not find card with id: " + cardId));
     }
 
     @GetMapping(path = "set/{setCode}")
